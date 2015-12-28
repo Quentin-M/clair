@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	log = capnslog.NewPackageLogger("github.com/coreos/clair", "worker")
+	log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "worker")
 
 	// ErrUnsupported is the error that should be raised when an OS or package
 	// manager is not supported.
@@ -47,24 +47,24 @@ var (
 	// has yet to be processed for the current layer.
 	ErrParentUnknown = errors.New("worker: parent layer is unknown, it must be processed first")
 
-	// SupportedOS is the list of operating system names that the worker supports.
-	SupportedOS = []string{"debian", "ubuntu", "centos"}
+	// SupportedNamespacesPrefixes is the list of namespace prefixes that the worker supports.
+	SupportedNamespacePrefixes = []string{"debian:", "ubuntu:", "centos:"}
 
 	// SupportedImageFormat is the list of image formats that the worker supports.
 	SupportedImageFormat = []string{"Docker", "ACI"}
 )
 
-// Process detects the OS of a layer, the packages it installs/removes, and
+// Process detects the Namespace of a layer, the features it adds/removes, and
 // then stores everything in the database.
-func Process(ID, parentID, path string, imageFormat string) error {
-	if ID == "" {
-		return cerrors.NewBadRequestError("could not process a layer which does not have ID")
+func Process(datastore *database.Datastore, name, parentName, path, imageFormat string) error {
+	if name == "" {
+		return cerrors.NewBadRequestError("could not process a layer which does not have a name")
 	}
 	if path == "" {
 		return cerrors.NewBadRequestError("could not process a layer which does not have a path")
 	}
 	if imageFormat == "" {
-		return cerrors.NewBadRequestError("could not process a layer which does not have a specified format")
+		return cerrors.NewBadRequestError("could not process a layer which does not have a format")
 	} else {
 		isSupported := false
 		for _, format := range SupportedImageFormat {
@@ -78,10 +78,10 @@ func Process(ID, parentID, path string, imageFormat string) error {
 		}
 	}
 
-	log.Debugf("layer %s: processing (Location: %s, Engine version: %d, Parent: %s, Format: %s)", ID, utils.CleanURL(path), Version, parentID, imageFormat)
+	log.Debugf("layer %s: processing (Location: %s, Engine version: %d, Parent: %s, Format: %s)", name, utils.CleanURL(path), Version, parentName, imageFormat)
 
 	// Check to see if the layer is already in the database.
-	layer, err := database.FindOneLayerByID(ID, []string{database.FieldLayerEngineVersion})
+	layer, err := datastore.FindLayer(name, []string{database.FieldLayerEngineVersion})
 	if err != nil && err != cerrors.ErrNotFound {
 		return err
 	}
@@ -101,13 +101,13 @@ func Process(ID, parentID, path string, imageFormat string) error {
 		layer = &database.Layer{ID: ID, EngineVersion: Version}
 
 		// Check to make sure that the parent's layer has already been processed.
-		if parentID != "" {
-			parent, err = database.FindOneLayerByID(parentID, []string{database.FieldLayerOS, database.FieldLayerPackages, database.FieldLayerPackages})
+		if parentName != "" {
+			parent, err = database.FindOneLayerByID(parentName, []string{database.FieldLayerOS, database.FieldLayerPackages, database.FieldLayerPackages})
 			if err != nil && err != cerrors.ErrNotFound {
 				return err
 			}
 			if parent == nil {
-				log.Warningf("layer %s: the parent layer (%s) is unknown. it must be processed first", ID, parentID)
+				log.Warningf("layer %s: the parent layer (%s) is unknown. it must be processed first", ID, parentName)
 				return ErrParentUnknown
 			}
 			layer.ParentNode = parent.GetNode()
@@ -165,7 +165,7 @@ func detectContent(ID, path string, parent *database.Layer, imageFormat string) 
 		// If the layer has no parent, it can only add packages, not remove them.
 		if parent == nil {
 			// Build a list of the layer packages' node values.
-			var installedPackages []*database.Package
+			var installedPackages []database.FeatureVersion
 			for _, p := range packageList {
 				p.OS = OS
 				installedPackages = append(installedPackages, p)
@@ -235,7 +235,7 @@ func detectOS(data map[string][]byte, parent *database.Layer) (detectedOS string
 
 // detectAndInsertInstalledAndRemovedPackages finds the installed and removed
 // package nodes and inserts the installed packages into the database.
-func detectAndInsertInstalledAndRemovedPackages(detectedOS string, packageList []*database.Package, parent *database.Layer) (installedNodes, removedNodes []string, err error) {
+func detectAndInsertInstalledAndRemovedPackages(detectedOS string, packageList []database.FeatureVersion, parent *database.Layer) (installedNodes, removedNodes []string, err error) {
 	// Get the parent layer's packages.
 	parentPackageNodes, err := parent.AllPackages()
 	if err != nil {
@@ -275,7 +275,7 @@ func detectAndInsertInstalledAndRemovedPackages(detectedOS string, packageList [
 	installedPackagesNV := utils.CompareStringLists(layerPackagesNV, parentPackagesNV)
 
 	// Build a list of all the installed packages.
-	var installedPackages []*database.Package
+	var installedPackages []database.FeatureVersion
 	for _, nv := range installedPackagesNV {
 		p, _ := packagesNVMapToPackage[nv]
 		p.OS = detectedOS

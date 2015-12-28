@@ -26,17 +26,27 @@ import (
 	"time"
 
 	"github.com/coreos/pkg/capnslog"
+	"github.com/julienschmidt/httprouter"
 	"github.com/tylerb/graceful"
 
 	"github.com/coreos/clair/config"
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/utils"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair", "api")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "api")
+
+// Env stores the environment used by the API.
+type Env struct {
+	Datastore database.Datastore
+}
+
+// Handler is a httprouter.Handle with an environment context.
+type Handler func(ResponseWriter, *http.Request, httprouter.Params, *Env)
 
 // Run launches the main API, which exposes every possible interactions
 // with clair.
-func Run(config *config.APIConfig, st *utils.Stopper) {
+func Run(config *config.APIConfig, env *Env, st *utils.Stopper) {
 	defer st.End()
 
 	// Do not run the API service if there is no config.
@@ -60,7 +70,7 @@ func Run(config *config.APIConfig, st *utils.Stopper) {
 		Server: &http.Server{
 			Addr:      ":" + strconv.Itoa(config.Port),
 			TLSConfig: tlsConfig,
-			Handler:   NewVersionRouter(config.Timeout),
+			Handler:   NewVersionRouter(config.Timeout, env),
 		},
 	}
 	listenAndServeWithStopper(srv, st, config.CertFile, config.KeyFile)
@@ -69,7 +79,7 @@ func Run(config *config.APIConfig, st *utils.Stopper) {
 
 // RunHealth launches the Health API, which only exposes a method to fetch
 // Clair's health without any security or authentication mechanism.
-func RunHealth(config *config.APIConfig, st *utils.Stopper) {
+func RunHealth(config *config.APIConfig, env *Env, st *utils.Stopper) {
 	defer st.End()
 
 	// Do not run the API service if there is no config.
@@ -84,7 +94,7 @@ func RunHealth(config *config.APIConfig, st *utils.Stopper) {
 		NoSignalHandling: true,             // We want to use our own Stopper
 		Server: &http.Server{
 			Addr:    ":" + strconv.Itoa(config.HealthPort),
-			Handler: NewHealthRouter(),
+			Handler: NewHealthRouter(env),
 		},
 	}
 	listenAndServeWithStopper(srv, st, "", "")

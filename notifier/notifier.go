@@ -29,7 +29,7 @@ import (
 	"github.com/coreos/clair/utils"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair", "notifier")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "notifier")
 
 const (
 	checkInterval       = 5 * time.Minute

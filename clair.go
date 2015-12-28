@@ -25,13 +25,11 @@ import (
 	"github.com/coreos/clair/api"
 	"github.com/coreos/clair/config"
 	"github.com/coreos/clair/database"
-	"github.com/coreos/clair/notifier"
-	"github.com/coreos/clair/updater"
 	"github.com/coreos/clair/utils"
 	"github.com/coreos/pkg/capnslog"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair", "main")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "main")
 
 // Boot starts Clair. By exporting this function, anyone can import their own
 // custom fetchers/updaters into their own package and then call clair.Boot.
@@ -40,25 +38,25 @@ func Boot(config *config.Config) {
 	st := utils.NewStopper()
 
 	// Open database
-	err := database.Open(config.Database)
+	db, err := database.NewPGSQL(config.Database)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer database.Close()
+	defer db.Close()
 
 	// Start notifier
-	st.Begin()
-	go notifier.Run(config.Notifier, st)
+	// st.Begin()
+	// go notifier.Run(config.Notifier, st)
 
 	// Start API
 	st.Begin()
-	go api.Run(config.API, st)
+	go api.Run(config.API, api.Env{Datastore: db}, st)
 	st.Begin()
-	go api.RunHealth(config.API, st)
+	go api.RunHealth(config.API, api.Env{Datastore: db}, st)
 
 	// Start updater
-	st.Begin()
-	go updater.Run(config.Updater, st)
+	// st.Begin()
+	// go updater.Run(config.Updater, st)
 
 	// Wait for interruption and shutdown gracefully.
 	waitForSignals(os.Interrupt)

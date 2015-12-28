@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fetchers implements vulnerability fetchers for several sources.
-package fetchers
+package namespace
 
 import (
-	"errors"
+	"testing"
 
-	"github.com/coreos/pkg/capnslog"
+	"github.com/coreos/clair/worker/detectors"
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "updater/fetchers")
+type NamespaceTest struct {
+	Data              map[string][]byte
+	ExpectedNamespace string
+}
 
-	// ErrCouldNotParse is returned when a fetcher fails to parse the update data.
-	ErrCouldNotParse = errors.New("updater/fetchers: could not parse")
-
-	// ErrFilesystem is returned when a fetcher fails to interact with the local filesystem.
-	ErrFilesystem = errors.New("updater/fetchers: something went wrong when interacting with the fs")
-)
+func TestNamespaceDetector(t *testing.T, detector detectors.NamespaceDetector, tests []NamespaceTest) {
+	for _, test := range tests {
+		assert.Equal(t, test.ExpectedNamespace, detector.Detect(test.Data))
+	}
+}
