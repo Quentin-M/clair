@@ -11,6 +11,7 @@ import (
 
 	"bitbucket.org/liamstask/goose/lib/goose"
 	"github.com/coreos/pkg/capnslog"
+	"github.com/hashicorp/golang-lru"
 	"github.com/lib/pq"
 	"github.com/pborman/uuid"
 )
@@ -19,6 +20,7 @@ var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "pgsql")
 
 type pgSQL struct {
 	*sql.DB
+	cache *lru.ARCCache
 }
 
 func (pgSQL *pgSQL) Close() {
@@ -28,7 +30,7 @@ func (pgSQL *pgSQL) Close() {
 // Open creates a Datastore backed by a PostgreSQL database.
 //
 // It will run immediately every necessary migration on the database.
-func Open(dataSource string) (*pgSQL, error) {
+func Open(dataSource string, cacheSize int) (*pgSQL, error) {
 	// Run migrations.
 	if err := Migrate(dataSource); err != nil {
 		return nil, fmt.Errorf("could not run database migration: %v", err)
@@ -40,7 +42,14 @@ func Open(dataSource string) (*pgSQL, error) {
 		return nil, fmt.Errorf("could not open database (Open): %v", err)
 	}
 
-	return &pgSQL{DB: db}, nil
+	// Initialize cache.
+	// TODO(Quentin-M): Benchmark with a simple LRU Cache.
+	var cache *lru.ARCCache
+	if cacheSize > 0 {
+		cache, _ = lru.NewARC(cacheSize)
+	}
+
+	return &pgSQL{DB: db, cache: cache}, nil
 }
 
 // Migrate runs all available migrations on a pgSQL database.
@@ -140,7 +149,7 @@ func OpenForTest(name string, withTestData bool) (*pgSQLTest, error) {
 	}
 
 	// Open database.
-	pgSQL, err := Open(dataSource + "dbname=" + dbName)
+	pgSQL, err := Open(dataSource + "dbname=" + dbName, 0)
 	if err != nil {
 		DropDatabase(dataSource, dbName)
 		return nil, err

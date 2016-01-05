@@ -3,7 +3,7 @@ package pgsql
 import (
 	"database/sql"
 
-	"github.com/coreos/clair-sql-database/database"
+	"github.com/coreos/clair/database"
 	cerrors "github.com/coreos/clair/utils/errors"
 )
 
@@ -13,12 +13,7 @@ func (pgSQL *pgSQL) FindLayer(name string, withFeatures, withVulnerabilities boo
 	var parentName sql.NullString
 	var namespaceName sql.NullString
 
-	err := pgSQL.QueryRow(`
-    SELECT l.id, l.name, l.engineversion, p.name, n.name
-    FROM Layer l
-      LEFT JOIN Layer p ON l.parent_id = p.id
-      LEFT JOIN Namespace n ON l.namespace_id = n.id
-    WHERE l.name = $1;`, name).
+	err := pgSQL.QueryRow(getQuery("s_layer"), name).
 		Scan(&layer.ID, &layer.Name, &layer.EngineVersion, &parentName, &namespaceName)
 
 	if err == sql.ErrNoRows {
@@ -62,32 +57,12 @@ func (pgSQL *pgSQL) getLayerFeatureVersions(layerID int, idOnly bool) ([]databas
 	var featureVersions []database.FeatureVersion
 
 	// Build query
-	query := `
-    WITH RECURSIVE layer_tree(id, parent_id, depth, path, cycle) AS(
-      SELECT l.id, l.parent_id, 1, ARRAY[l.id], false
-      FROM Layer l
-      WHERE l.id = $1
-    UNION ALL
-      SELECT l.id, l.parent_id, lt.depth + 1, path || l.id, l.id = ANY(path)
-      FROM Layer l, layer_tree lt
-      WHERE l.id = lt.parent_id
-    )
-
-    SELECT ldf.featureversion_id, ldf.modification `
-	if !idOnly {
-		query = query + ", fn.id, fn.name, f.id, f.name, fv.id, fv.version "
+	var query string
+	if idOnly {
+		query = getQuery("s_layer_featureversion_id_only")
+	} else {
+		query = getQuery("s_layer_featureversion")
 	}
-	query = query + `
-    FROM Layer_diff_FeatureVersion ldf
-    JOIN (
-      SELECT row_number() over (ORDER BY depth DESC), id FROM layer_tree
-    ) AS ltree (ordering, id) ON ldf.layer_id = ltree.id `
-	if !idOnly {
-		query = query + `
-      , FeatureVersion fv, Feature f, Namespace fn
-      WHERE ldf.featureversion_id = fv.id AND fv.feature_id = f.id AND f.namespace_id = fn.id `
-	}
-	query = query + `ORDER BY ltree.ordering`
 
 	// Query
 	rows, err := pgSQL.Query(query, layerID)
@@ -152,14 +127,8 @@ func (pgSQL *pgSQL) loadAffectedBy(featureVersions []database.FeatureVersion) er
 		featureVersionIDs = append(featureVersionIDs, featureVersions[i].ID)
 	}
 
-	rows, err := pgSQL.Query(`
-    SELECT vafv.featureversion_id, v.id, v.name, v.description, v.link, v.severity, vn.name, vfif.version
-    FROM Vulnerability_Affects_FeatureVersion vafv, Vulnerability v,
-         Namespace vn, Vulnerability_FixedIn_Feature vfif
-    WHERE vafv.featureversion_id = ANY($1::integer[])
-          AND vafv.vulnerability_id = v.id
-          AND vafv.fixedin_id = vfif.id
-          AND v.namespace_id = vn.id`, buildInputArray(featureVersionIDs))
+	rows, err := pgSQL.Query(getQuery("s_featureversions_vulnerabilities"),
+		buildInputArray(featureVersionIDs))
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}

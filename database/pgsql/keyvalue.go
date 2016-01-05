@@ -21,16 +21,10 @@ func (pgSQL *pgSQL) InsertKeyValue(key, value string) (err error) {
 	//       moment so we can just use a client-side solution with transactions, based on
 	//       http://postgresql.org/docs/current/static/plpgsql-control-structures.html.
 	// TODO(Quentin-M): Enable Upsert as soon as 9.5 is stable.
-	//
-	// _, err = pgSQL.sqBuilder.Insert("keyvalue").
-	// 	Columns("key", "value").
-	// 	Values(key, value).
-	// 	Suffix("ON CONFLICT (key) DO UPDATE SET value = ?", value).
-	// 	Exec()
 
 	for {
 		// First, try to update.
-		r, err := pgSQL.Exec("UPDATE KeyValue SET value = $1 WHERE key = $2", value, key)
+		r, err := pgSQL.Exec(getQuery("u_keyvalue"), value, key)
 		if err != nil {
 			return err
 		}
@@ -41,7 +35,7 @@ func (pgSQL *pgSQL) InsertKeyValue(key, value string) (err error) {
 
 		// Try to insert the key.
 		// If someone else inserts the same key concurrently, we could get a unique-key violation error.
-		_, err = pgSQL.Exec("INSERT INTO KeyValue(key, value) VALUES($1, $2)", key, value)
+		_, err = pgSQL.Exec(getQuery("i_keyvalue"), key, value)
 		if err != nil {
 			if isErrUniqueViolation(err) {
 				// Got unique constraint violation, retry.
@@ -56,7 +50,7 @@ func (pgSQL *pgSQL) InsertKeyValue(key, value string) (err error) {
 
 // GetValue reads a single key / value tuple and returns an empty string if the key doesn't exist.
 func (pgSQL *pgSQL) GetKeyValue(key string) (value string, err error) {
-	err = pgSQL.QueryRow("SELECT value FROM KeyValue WHERE key = $1", key).Scan(&value)
+	err = pgSQL.QueryRow(getQuery("s_keyvalue"), key).Scan(&value)
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
