@@ -20,6 +20,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/health"
 	httputils "github.com/coreos/clair/utils/http"
 	"github.com/coreos/clair/worker"
@@ -78,7 +79,7 @@ func POSTLayers(w http.ResponseWriter, r *http.Request, _ httprouter.Params, e *
 
 // DELETELayers deletes the specified layer and any child layers that are
 // dependent on the specified layer.
-func DELETELayers(w http.ResponseWriter, r *http.Request, _ httprouter.Params, e *Env) {
+func DELETELayers(w http.ResponseWriter, r *http.Request, p httprouter.Params, e *Env) {
 	if err := e.Datastore.DeleteLayer(p.ByName("id")); err != nil {
 		httputils.WriteHTTPError(w, 0, err)
 		return
@@ -104,5 +105,5 @@ func GETLayers(w http.ResponseWriter, r *http.Request, p httprouter.Params, e *E
 		httputils.WriteHTTPError(w, 0, err)
 		return
 	}
-	httputils.WriteHTTP(w, http.StatusOK, struct{ Layer string }{Layer: layer})
+	httputils.WriteHTTP(w, http.StatusOK, struct{ Layer database.Layer }{Layer: layer})
 }

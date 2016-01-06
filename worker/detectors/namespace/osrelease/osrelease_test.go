@@ -17,12 +17,13 @@ package osrelease
 import (
 	"testing"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/worker/detectors/namespace"
 )
 
 var osReleaseOSTests = []namespace.NamespaceTest{
 	namespace.NamespaceTest{
-		ExpectedNamespace: "debian:8",
+		ExpectedNamespace: database.Namespace{Name: "debian:8"},
 		Data: map[string][]byte{
 			"etc/os-release": []byte(
 				`PRETTY_NAME="Debian GNU/Linux 8 (jessie)"
@@ -36,7 +37,7 @@ BUG_REPORT_URL="https://bugs.debian.org/"`),
 		},
 	},
 	namespace.NamespaceTest{
-		ExpectedNamespace: "ubuntu:15.10",
+		ExpectedNamespace: database.Namespace{Name: "ubuntu:15.10"},
 		Data: map[string][]byte{
 			"etc/os-release": []byte(
 				`NAME="Ubuntu"
@@ -51,7 +52,7 @@ BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"`),
 		},
 	},
 	namespace.NamespaceTest{ // Doesn't have quotes around VERSION_ID
-		ExpectedNamespace: "fedora:20",
+		ExpectedNamespace: database.Namespace{Name: "fedora:20"},
 		Data: map[string][]byte{
 			"etc/os-release": []byte(
 				`NAME=Fedora

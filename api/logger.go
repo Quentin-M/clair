@@ -59,11 +59,11 @@ func (lw *logWriter) Status() int {
 }
 
 // Logger wraps an Handler and logs the API call
-func Logger(fn Handler) Handler {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params, e *Env) {
+func Logger(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		lw := &logWriter{ResponseWriter: w}
 		start := time.Now()
-		fn(lw, r, p, e)
+		fn(lw, r, p)
 		log.Infof("%d %s %s (%s)", lw.Status(), r.Method, r.RequestURI, time.Since(start))
 	}
 }

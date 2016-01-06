@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/worker/detectors"
 )
 
@@ -38,7 +39,7 @@ func init() {
 // Detect tries to detect OS/Version using "/etc/os-release" and "/usr/lib/os-release"
 // Typically for Debian / Ubuntu
 // /etc/debian_version can't be used, it does not make any difference between testing and unstable, it returns stretch/sid
-func (detector *OsReleaseNamespaceDetector) Detect(data map[string][]byte) string {
+func (detector *OsReleaseNamespaceDetector) Detect(data map[string][]byte) *database.Namespace {
 	var OS, version string
 
 	for _, filePath := range detector.GetRequiredFiles() {
@@ -64,9 +65,9 @@ func (detector *OsReleaseNamespaceDetector) Detect(data map[string][]byte) strin
 	}
 
 	if OS != "" && version != "" {
-		return OS + ":" + version
+		return &database.Namespace{Name: OS + ":" + version}
 	}
-	return ""
+	return nil
 }
 
 // GetRequiredFiles returns the list of files that are required for Detect()

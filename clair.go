@@ -24,7 +24,7 @@ import (
 
 	"github.com/coreos/clair/api"
 	"github.com/coreos/clair/config"
-	"github.com/coreos/clair/database"
+	"github.com/coreos/clair/database/pgsql"
 	"github.com/coreos/clair/utils"
 	"github.com/coreos/pkg/capnslog"
 )
@@ -38,7 +38,7 @@ func Boot(config *config.Config) {
 	st := utils.NewStopper()
 
 	// Open database
-	db, err := database.NewPGSQL(config.Database)
+	db, err := pgsql.Open(config.Database)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,9 +50,9 @@ func Boot(config *config.Config) {
 
 	// Start API
 	st.Begin()
-	go api.Run(config.API, api.Env{Datastore: db}, st)
+	go api.Run(config.API, &api.Env{Datastore: db}, st)
 	st.Begin()
-	go api.RunHealth(config.API, api.Env{Datastore: db}, st)
+	go api.RunHealth(config.API, &api.Env{Datastore: db}, st)
 
 	// Start updater
 	// st.Begin()

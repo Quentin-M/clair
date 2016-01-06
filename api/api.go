@@ -41,8 +41,17 @@ type Env struct {
 	Datastore database.Datastore
 }
 
-// Handler is a httprouter.Handle with an environment context.
-type Handler func(ResponseWriter, *http.Request, httprouter.Params, *Env)
+// Handle adds a fourth parameter to httprouter.Handle: a pointer to *Env,
+// allowing us to pass our environment to the handler.
+type Handle func(http.ResponseWriter, *http.Request, httprouter.Params, *Env)
+
+// WrapHandle encloses a Handle into a httprouter.Handle to make it usable by
+// httprouter.
+func WrapHandle(fn Handle, e *Env) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		fn(w, r, p, e)
+	}
+}
 
 // Run launches the main API, which exposes every possible interactions
 // with clair.

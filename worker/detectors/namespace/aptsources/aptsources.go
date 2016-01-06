@@ -33,10 +33,10 @@ func init() {
 	detectors.RegisterNamespaceDetector("apt-sources", &AptSourcesNamespaceDetector{})
 }
 
-func (detector *AptSourcesNamespaceDetector) Detect(data map[string][]byte) string {
+func (detector *AptSourcesNamespaceDetector) Detect(data map[string][]byte) *database.Namespace {
 	f, hasFile := data["etc/apt/sources.list"]
 	if !hasFile {
-		return ""
+		return nil
 	}
 
 	var OS, version string
@@ -75,9 +75,9 @@ func (detector *AptSourcesNamespaceDetector) Detect(data map[string][]byte) stri
 	}
 
 	if OS != "" && version != "" {
-		return OS + ":" + version
+		return &database.Namespace{Name: OS + ":" + version}
 	}
-	return ""
+	return nil
 }
 
 func (detector *AptSourcesNamespaceDetector) GetRequiredFiles() []string {

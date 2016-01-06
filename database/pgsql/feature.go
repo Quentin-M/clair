@@ -29,6 +29,13 @@ func (pgSQL *pgSQL) insertFeature(feature database.Feature) (id int, err error) 
 }
 
 func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion) (id int, err error) {
+	if pgSQL.cache != nil {
+		if id, found := pgSQL.cache.Get("featureversion:" + featureVersion.Feature.Name + ":" +
+			featureVersion.Version.String()); found {
+			return id.(int), nil
+		}
+	}
+
 	// Find or create Feature first.
 	featureID, err := pgSQL.insertFeature(featureVersion.Feature)
 	if err != nil {
@@ -43,12 +50,16 @@ func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion)
 	}
 
 	// Find or create FeatureVersion.
-	// TODO Find
-	var err = tx.QueryRow(soi_featureversion,	featureID, featureVersion.Version).
-    Scan(&featureVersion.ID)
+	var newOrExisting string
+	err = tx.QueryRow(getQuery("soi_featureversion"), featureID, featureVersion.Version).
+		Scan(&newOrExisting, &featureVersion.ID)
 	if err != nil {
 		tx.Rollback()
 		return -1, err
+	}
+	if newOrExisting == "exi" {
+		// That featureVersion already exists, return its id.
+		return featureVersion.ID, nil
 	}
 
 	// Link the new FeatureVersion with every vulnerabilities that affect it, by inserting in
@@ -83,7 +94,7 @@ func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion)
 			// The version of the FeatureVersion we are inserting is lower than the fixed version on this
 			// Vulnerability, thus, this FeatureVersion is affected by it.
 			_, err := tx.Exec(getQuery("i_vulnerability_affects_featureversion"), vulnerabilityID,
-        featureVersion.ID, fixedInID)
+				featureVersion.ID, fixedInID)
 			if err != nil {
 				tx.Rollback()
 				return -1, err
@@ -91,11 +102,16 @@ func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion)
 		}
 	}
 
-	// Commit transaction
+	// Commit transaction.
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
 		return -1, err
+	}
+
+	if pgSQL.cache != nil {
+		pgSQL.cache.Add("featureversion:"+featureVersion.Feature.Name+":"+
+			featureVersion.Version.String(), featureVersion.ID)
 	}
 
 	return 0, nil

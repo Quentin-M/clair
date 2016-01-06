@@ -56,18 +56,21 @@ func (vs VersionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // NewRouterV1 creates a new router for the API (Version 1)
 func NewRouterV1(to time.Duration, env *Env) *httprouter.Router {
 	router := httprouter.New()
-	wrap := func(fn Handler) Handler {
-		return Logger(TimeOut(to, fn))
+
+	// Create a wrapper that will wrap a Handle into a httprouter.Handle and that adds
+	// logging and time-out capabilities.
+	wrap := func(fn Handle, e *Env) httprouter.Handle {
+		return Logger(TimeOut(to, WrapHandle(fn, e)))
 	}
 
 	// General
-	router.GET("/versions", wrap(GETVersions))
-	router.GET("/health", wrap(GETHealth))
+	router.GET("/versions", wrap(GETVersions, env))
+	router.GET("/health", wrap(GETHealth, env))
 
 	// Layers
-	router.POST("/layers", wrap(POSTLayers))
-	router.DELETE("/layers/:id", wrap(DELETELayers))
-	router.GET("/layers/:id", wrap(GETLayers))
+	router.POST("/layers", wrap(POSTLayers, env))
+	router.DELETE("/layers/:id", wrap(DELETELayers, env))
+	router.GET("/layers/:id", wrap(GETLayers, env))
 
 	// Vulnerabilities
 	// router.POST("/vulnerabilities", wrap(logic.POSTVulnerabilities))
@@ -83,6 +86,6 @@ func NewRouterV1(to time.Duration, env *Env) *httprouter.Router {
 // NewHealthRouter creates a new router that only serve the Health function on /
 func NewHealthRouter(env *Env) *httprouter.Router {
 	router := httprouter.New()
-	router.GET("/", GETHealth)
+	router.GET("/", WrapHandle(GETHealth, env))
 	return router
 }

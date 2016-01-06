@@ -72,17 +72,17 @@ func (tw *timeoutWriter) WriteHeader(status int) {
 // ErrHandlerTimeout.
 //
 // If the duration is 0, the wrapper does nothing.
-func TimeOut(d time.Duration, fn Handler) Handler {
+func TimeOut(d time.Duration, fn httprouter.Handle) httprouter.Handle {
 	if d == 0 {
 		return fn
 	}
 
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params, e *Env) {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		done := make(chan bool)
 		tw := &timeoutWriter{ResponseWriter: w}
 
 		go func() {
-			fn(tw, r, p, e)
+			fn(tw, r, p)
 			done <- true
 		}()
 

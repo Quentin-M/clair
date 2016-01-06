@@ -17,17 +17,18 @@ package namespace
 import (
 	"testing"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/worker/detectors"
 	"github.com/stretchr/testify/assert"
 )
 
 type NamespaceTest struct {
 	Data              map[string][]byte
-	ExpectedNamespace string
+	ExpectedNamespace database.Namespace
 }
 
 func TestNamespaceDetector(t *testing.T, detector detectors.NamespaceDetector, tests []NamespaceTest) {
 	for _, test := range tests {
-		assert.Equal(t, test.ExpectedNamespace, detector.Detect(test.Data))
+		assert.Equal(t, test.ExpectedNamespace, *detector.Detect(test.Data))
 	}
 }

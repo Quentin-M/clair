@@ -17,12 +17,13 @@ package lsbrelease
 import (
 	"testing"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/worker/detectors/namespace"
 )
 
 var lsbReleaseOSTests = []namespace.NamespaceTest{
 	namespace.NamespaceTest{
-		ExpectedNamespace: "ubuntu:12.04",
+		ExpectedNamespace: database.Namespace{Name: "ubuntu:12.04"},
 		Data: map[string][]byte{
 			"etc/lsb-release": []byte(
 				`DISTRIB_ID=Ubuntu
@@ -32,7 +33,7 @@ DISTRIB_DESCRIPTION="Ubuntu 12.04 LTS"`),
 		},
 	},
 	namespace.NamespaceTest{ // We don't care about the minor version of Debian
-		ExpectedNamespace: "debian:7",
+		ExpectedNamespace: database.Namespace{Name: "debian:7"},
 		Data: map[string][]byte{
 			"etc/lsb-release": []byte(
 				`DISTRIB_ID=Debian

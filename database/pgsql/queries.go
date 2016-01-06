@@ -107,6 +107,11 @@ func init() {
           AND vafv.vulnerability_id = v.id
           AND vafv.fixedin_id = vfif.id
           AND v.namespace_id = vn.id`
+
+	queries["i_layer"] = `INSERT INTO Layer(name, engine_version, parent_id, namespace_id) VALUES($1, $2, $3, $4) RETURNING id`
+
+	queries["u_layer"] = `UPDATE LAYER SET engine_version = $2, namespace_id = $3) WHERE id = $1`
+
 }
 
 func getQuery(name string) string {

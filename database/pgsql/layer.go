@@ -5,6 +5,7 @@ import (
 
 	"github.com/coreos/clair/database"
 	cerrors "github.com/coreos/clair/utils/errors"
+	"github.com/guregu/null/zero"
 )
 
 func (pgSQL *pgSQL) FindLayer(name string, withFeatures, withVulnerabilities bool) (database.Layer, error) {
@@ -155,5 +156,119 @@ func (pgSQL *pgSQL) loadAffectedBy(featureVersions []database.FeatureVersion) er
 		featureVersions[i].AffectedBy = vulnerabilities[featureVersions[i].ID]
 	}
 
+	return nil
+}
+
+// InsertLayer insert a single layer in the database
+//
+// The Name and EngineVersion fields are required.
+// The Parent, Namespace, Features are optional.
+// However, please note that the Parent field, if provided, is expected to have been retrieved
+// using FindLayer with its Features.
+//
+// The Name MUST be unique for two different layers.
+//
+// TODO
+// If the Layer already exists, nothing is done, except if the provided engine
+// version is higher than the existing one, in which case, the OS,
+// InstalledPackagesNodes and RemovedPackagesNodes fields will be replaced.
+//
+// The layer should only contains the newly installed/removed packages
+// There is no safeguard that prevents from marking a package as newly installed
+// while it has already been installed in one of its parent.
+func (pgSQL *pgSQL) InsertLayer(layer database.Layer) error {
+	// Verify parameters
+	if layer.Name == "" {
+		log.Warning("could not insert a layer which has an empty Name")
+		return cerrors.NewBadRequestError("could not insert a layer which has an empty Name")
+	}
+
+	// Get a potentially existing layer.
+	existingLayer, err := pgSQL.FindLayer(layer.Name, true, false)
+	if err != nil && err != cerrors.ErrNotFound {
+		return err
+	}
+	isExisting := err == nil
+
+	// Begin transaction.
+	tx, err := pgSQL.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Find or insert namespace if provided.
+	var namespaceID zero.Int
+	if layer.Namespace != nil {
+		n, err := pgSQL.insertNamespace(*layer.Namespace)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		namespaceID = zero.IntFrom(int64(n))
+	}
+
+	if isExisting {
+		// Insert a new layer.
+		var parentID zero.Int
+		if layer.Parent != nil {
+			if layer.Parent.ID == 0 {
+				log.Warning("Parent is expected to be retrieved from database when inserting a layer.")
+				return cerrors.NewBadRequestError("Parent is expected to be retrieved from database when inserting a layer.")
+			}
+
+			parentID = zero.IntFrom(int64(layer.Parent.ID))
+		}
+
+		err = tx.QueryRow(getQuery("i_layer"), layer.Name, layer.EngineVersion, parentID, namespaceID).
+			Scan(&layer.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	} else {
+		if existingLayer.EngineVersion >= layer.EngineVersion {
+			// The layer exists and has an equal or higher engine verison, do nothing.
+			return nil
+		}
+
+		// Update an existing layer.
+		_, err = tx.Exec(getQuery("u_layer"), layer.ID, layer.EngineVersion, namespaceID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Update Layer_diff_FeatureVersion now.
+	updateDiffFeatureVersions(tx, &layer, &existingLayer)
+
+	// Commit transaction.
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func updateDiffFeatureVersions(tx *sql.Tx, layer, existingLayer *database.Layer) {
+	// TODO
+
+	if existingLayer != nil {
+		// We are updating a layer, we need to diff the Features with the existing Layer.
+
+	} else if layer.Parent == nil {
+		// There is no parent, every Features are added.
+
+	} else if layer.Parent != nil {
+		// There is a parent, we need to diff the Features with it.
+
+	}
+}
+
+func (pgSQL *pgSQL) DeleteLayer(name string) error {
+	// TODO
 	return nil
 }

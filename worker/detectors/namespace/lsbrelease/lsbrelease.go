@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/worker/detectors"
 )
 
@@ -37,10 +38,10 @@ func init() {
 	detectors.RegisterNamespaceDetector("lsb-release", &LsbReleaseNamespaceDetector{})
 }
 
-func (detector *LsbReleaseNamespaceDetector) Detect(data map[string][]byte) string {
+func (detector *LsbReleaseNamespaceDetector) Detect(data map[string][]byte) *database.Namespace {
 	f, hasFile := data["etc/lsb-release"]
 	if !hasFile {
-		return ""
+		return nil
 	}
 
 	var OS, version string
@@ -69,9 +70,9 @@ func (detector *LsbReleaseNamespaceDetector) Detect(data map[string][]byte) stri
 	}
 
 	if OS != "" && version != "" {
-		return OS + ":" + version
+		return &database.Namespace{Name: OS + ":" + version}
 	}
-	return ""
+	return nil
 }
 
 // GetRequiredFiles returns the list of files that are required for Detect()

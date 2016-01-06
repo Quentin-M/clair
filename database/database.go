@@ -17,12 +17,9 @@ var (
 
 type Datastore interface {
 	// Layer
-	InsertLayer(Layer)
+	InsertLayer(Layer) error
 	FindLayer(name string, withFeatures, withVulnerabilities bool) (layer Layer, err error)
-	// DeleteLayer(name string) error
-
-	// Feature
-	// InsertFeature([]*Feature) <<<--- TODO Dont need that!
+	DeleteLayer(name string) error
 
 	// Vulnerability
 	// InsertVulnerabilities([]*Vulnerability)
@@ -36,7 +33,7 @@ type Datastore interface {
 
 	// Key/Value
 	InsertKeyValue(key, value string) error
-	GetValue(key string) (string, error)
+	GetKeyValue(key string) (string, error)
 
 	// Lock
 	// Lock(name string, duration time.Duration, owner string) (bool, time.Time)

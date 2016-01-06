@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"bitbucket.org/liamstask/goose/lib/goose"
+	"github.com/coreos/clair/config"
+	"github.com/coreos/clair/database"
 	"github.com/coreos/pkg/capnslog"
 	"github.com/hashicorp/golang-lru"
 	"github.com/lib/pq"
@@ -30,14 +32,14 @@ func (pgSQL *pgSQL) Close() {
 // Open creates a Datastore backed by a PostgreSQL database.
 //
 // It will run immediately every necessary migration on the database.
-func Open(dataSource string, cacheSize int) (*pgSQL, error) {
+func Open(config *config.DatabaseConfig) (database.Datastore, error) {
 	// Run migrations.
-	if err := Migrate(dataSource); err != nil {
+	if err := Migrate(config.Source); err != nil {
 		return nil, fmt.Errorf("could not run database migration: %v", err)
 	}
 
 	// Open database.
-	db, err := sql.Open("postgres", dataSource)
+	db, err := sql.Open("postgres", config.Source)
 	if err != nil {
 		return nil, fmt.Errorf("could not open database (Open): %v", err)
 	}
@@ -45,8 +47,8 @@ func Open(dataSource string, cacheSize int) (*pgSQL, error) {
 	// Initialize cache.
 	// TODO(Quentin-M): Benchmark with a simple LRU Cache.
 	var cache *lru.ARCCache
-	if cacheSize > 0 {
-		cache, _ = lru.NewARC(cacheSize)
+	if config.CacheSize > 0 {
+		cache, _ = lru.NewARC(config.CacheSize)
 	}
 
 	return &pgSQL{DB: db, cache: cache}, nil
@@ -138,7 +140,7 @@ func (pgSQL *pgSQLTest) Close() {
 // OpenForTest creates a test Datastore backed by a new PostgreSQL database.
 // It creates a new unique and prefixed ("test_") database.
 // Using Close() will drop the database.
-func OpenForTest(name string, withTestData bool) (*pgSQLTest, error) {
+func OpenForTest(name string, withTestData bool) (database.Datastore, error) {
 	dataSource := "host=127.0.0.1 sslmode=disable "
 	dbName := "test_" + strings.ToLower(name) + "_" + strings.Replace(uuid.New(), "-", "_", -1)
 
@@ -149,7 +151,7 @@ func OpenForTest(name string, withTestData bool) (*pgSQLTest, error) {
 	}
 
 	// Open database.
-	pgSQL, err := Open(dataSource + "dbname=" + dbName, 0)
+	db, err := Open(&config.DatabaseConfig{Source: dataSource + "dbname=" + dbName, CacheSize: 0})
 	if err != nil {
 		DropDatabase(dataSource, dbName)
 		return nil, err
@@ -159,14 +161,14 @@ func OpenForTest(name string, withTestData bool) (*pgSQLTest, error) {
 	if withTestData {
 		_, filename, _, _ := runtime.Caller(0)
 		d, _ := ioutil.ReadFile(path.Join(path.Dir(filename)) + "/testdata/data.sql")
-		_, err = pgSQL.Exec(string(d))
+		_, err = db.(*pgSQL).Exec(string(d))
 		if err != nil {
 			DropDatabase(dataSource, dbName)
 			return nil, err
 		}
 	}
 
-	return &pgSQLTest{pgSQL: pgSQL, dataSource: dataSource, dbName: dbName}, nil
+	return &pgSQLTest{pgSQL: db.(*pgSQL), dataSource: dataSource, dbName: dbName}, nil
 }
 
 // buildInputArray constructs a PostgreSQL input array from the specified integers.

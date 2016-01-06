@@ -19,13 +19,15 @@ package detectors
 import (
 	"fmt"
 	"sync"
+
+	"github.com/coreos/clair/database"
 )
 
-// The NamespaceDetector interface defines a way to detect an Operating System and
-// its version from input data.
+// The NamespaceDetector interface defines a way to detect a Namespace from input data.
+// A namespace is usually made of an Operating System name and its version.
 type NamespaceDetector interface {
-	// Detect detects an Operating System and its version from input data.
-	Detect(map[string][]byte) string
+	// Detect detects a Namespace and its version from input data.
+	Detect(map[string][]byte) *database.Namespace
 	// GetRequiredFiles returns the list of files required for Detect, without
 	// leading /.
 	GetRequiredFiles() []string
@@ -59,17 +61,17 @@ func RegisterNamespaceDetector(name string, f NamespaceDetector) {
 }
 
 // DetectNamespace finds the OS of the layer by using every registered NamespaceDetector.
-func DetectNamespace(data map[string][]byte) string {
+func DetectNamespace(data map[string][]byte) *database.Namespace {
 	for _, detector := range namespaceDetectors {
-		if namespace := detector.Detect(data); namespace != "" {
+		if namespace := detector.Detect(data); namespace != nil {
 			return namespace
 		}
 	}
 
-	return ""
+	return nil
 }
 
-// GetRequiredFilesOS returns the list of files required for DetectNamespace for every
+// GetRequiredFilesNamespace returns the list of files required for DetectNamespace for every
 // registered NamespaceDetector, without leading /.
 func GetRequiredFilesNamespace() (files []string) {
 	for _, detector := range namespaceDetectors {
