@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "worker")
+	log = capnslog.NewPackageLogger("github.com/coreos/clair", "worker")
 
 	// ErrUnsupported is the error that should be raised when an OS or package
 	// manager is not supported.

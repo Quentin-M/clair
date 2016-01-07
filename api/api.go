@@ -34,7 +34,7 @@ import (
 	"github.com/coreos/clair/utils"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "api")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair", "api")
 
 // Env stores the environment used by the API.
 type Env struct {

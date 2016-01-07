@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "updater/fetchers")
+	log = capnslog.NewPackageLogger("github.com/coreos/clair", "updater/fetchers")
 
 	// ErrCouldNotParse is returned when a fetcher fails to parse the update data.
 	ErrCouldNotParse = errors.New("updater/fetchers: could not parse")

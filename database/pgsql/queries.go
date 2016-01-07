@@ -5,6 +5,8 @@ import "fmt"
 var queries map[string]string
 
 func init() {
+	queries = make(map[string]string)
+
 	// keyvalue.go
 	queries["u_keyvalue"] = `UPDATE KeyValue SET value = $1 WHERE key = $2`
 	queries["i_keyvalue"] = `INSERT INTO KeyValue(key, value) VALUES($1, $2)`
@@ -92,11 +94,11 @@ func init() {
       WHERE l.id = lt.parent_id
     )
     SELECT ldf.featureversion_id, ldf.modification, fn.id, fn.name, f.id, f.name, fv.id, fv.version
-    FROM Layer_diff_FeatureVersion ldf, FeatureVersion fv, Feature f, Namespace fn
-    WHERE ldf.featureversion_id = fv.id AND fv.feature_id = f.id AND f.namespace_id = fn.id
+    FROM Layer_diff_FeatureVersion ldf
     JOIN (
       SELECT row_number() over (ORDER BY depth DESC), id FROM layer_tree
-    ) AS ltree (ordering, id) ON ldf.layer_id = ltree.id
+    ) AS ltree (ordering, id) ON ldf.layer_id = ltree.id, FeatureVersion fv, Feature f, Namespace fn
+    WHERE ldf.featureversion_id = fv.id AND fv.feature_id = f.id AND f.namespace_id = fn.id
     ORDER BY ltree.ordering`
 
 	queries["s_featureversions_vulnerabilities"] = `
@@ -111,7 +113,6 @@ func init() {
 	queries["i_layer"] = `INSERT INTO Layer(name, engine_version, parent_id, namespace_id) VALUES($1, $2, $3, $4) RETURNING id`
 
 	queries["u_layer"] = `UPDATE LAYER SET engine_version = $2, namespace_id = $3) WHERE id = $1`
-
 }
 
 func getQuery(name string) string {

@@ -18,7 +18,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "pgsql")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair", "pgsql")
 
 type pgSQL struct {
 	*sql.DB
@@ -134,13 +134,13 @@ type pgSQLTest struct {
 
 func (pgSQL *pgSQLTest) Close() {
 	pgSQL.DB.Close()
-	DropDatabase(pgSQL.dataSource, pgSQL.dbName)
+	DropDatabase(pgSQL.dataSource+"dbname=postgres", pgSQL.dbName)
 }
 
 // OpenForTest creates a test Datastore backed by a new PostgreSQL database.
 // It creates a new unique and prefixed ("test_") database.
 // Using Close() will drop the database.
-func OpenForTest(name string, withTestData bool) (database.Datastore, error) {
+func OpenForTest(name string, withTestData bool) (*pgSQLTest, error) {
 	dataSource := "host=127.0.0.1 sslmode=disable "
 	dbName := "test_" + strings.ToLower(name) + "_" + strings.Replace(uuid.New(), "-", "_", -1)
 

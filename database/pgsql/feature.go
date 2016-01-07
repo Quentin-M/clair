@@ -3,9 +3,14 @@ package pgsql
 import (
 	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/utils/types"
+  cerrors "github.com/coreos/clair/utils/errors"
 )
 
 func (pgSQL *pgSQL) insertFeature(feature database.Feature) (id int, err error) {
+	if feature.Name == "" {
+		return 0, cerrors.NewBadRequestError("could not find/insert invalid Feature")
+	}
+
 	if pgSQL.cache != nil {
 		if id, found := pgSQL.cache.Get("feature:" + feature.Name); found {
 			return id.(int), nil
@@ -29,7 +34,11 @@ func (pgSQL *pgSQL) insertFeature(feature database.Feature) (id int, err error) 
 }
 
 func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion) (id int, err error) {
-	if pgSQL.cache != nil {
+  if featureVersion.Version.String() == "" {
+    return 0, cerrors.NewBadRequestError("could not find/insert invalid FeatureVersion")
+  }
+
+  if pgSQL.cache != nil {
 		if id, found := pgSQL.cache.Get("featureversion:" + featureVersion.Feature.Name + ":" +
 			featureVersion.Version.String()); found {
 			return id.(int), nil

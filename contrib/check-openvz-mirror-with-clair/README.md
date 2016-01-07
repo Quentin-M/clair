@@ -1,12 +1,12 @@
 check_openvz_mirror_with_clair
 ==============================
 
-**check_openvz_mirror_with_clair** - little tool for add templates from OpenVZ 6 mirror to [clair](https://github.com/coreos/clair-sql) for vulnerability analysis it.
+**check_openvz_mirror_with_clair** - little tool for add templates from OpenVZ 6 mirror to [clair](https://github.com/coreos/clair) for vulnerability analysis it.
 
 Install
 -------
 
-You must have already install and worked [clair](https://github.com/coreos/clair-sql)
+You must have already install and worked [clair](https://github.com/coreos/clair)
 
 ```
 export GOPATH=$(pwd)

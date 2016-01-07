@@ -28,7 +28,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "rpm")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair", "rpm")
 
 // RpmFeaturesDetector implements FeaturesDetector and detects rpm packages
 // It requires the "rpm" binary to be in the PATH

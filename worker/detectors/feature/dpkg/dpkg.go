@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "worker/detectors/packages")
+	log = capnslog.NewPackageLogger("github.com/coreos/clair", "worker/detectors/packages")
 
 	dpkgSrcCaptureRegexp      = regexp.MustCompile(`Source: (?P<name>[^\s]*)( \((?P<version>.*)\))?`)
 	dpkgSrcCaptureRegexpNames = dpkgSrcCaptureRegexp.SubexpNames()

@@ -1,8 +1,10 @@
 package pgsql
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/utils/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -84,36 +86,161 @@ func TestFindLayer(t *testing.T) {
 	}
 }
 
-// // TestInvalidLayers tries to insert invalid layers
-// func TestInvalidLayers(t *testing.T) {
-// 	Open(&config.DatabaseConfig{Type: "memstore"})
-// 	defer Close()
-//
-// 	assert.Error(t, InsertLayer(&Layer{ID: ""})) // No ID
-// }
-//
-// func TestLayerUpdate(t *testing.T) {
-// 	Open(&config.DatabaseConfig{Type: "memstore"})
-// 	defer Close()
-//
-// 	l1 := &Layer{ID: "l1", OS: "os1", InstalledPackagesNodes: []string{"p1", "p2"}, RemovedPackagesNodes: []string{"p3", "p4"}, EngineVersion: 1}
-// 	if assert.Nil(t, InsertLayer(l1)) {
-// 		// Do not update layer content if the engine versions are equals
-// 		l1b := &Layer{ID: "l1", OS: "os2", InstalledPackagesNodes: []string{"p1"}, RemovedPackagesNodes: []string{""}, EngineVersion: 1}
-// 		if assert.Nil(t, InsertLayer(l1b)) {
-// 			fl1b, err := FindOneLayerByID(l1.ID, FieldLayerAll)
-// 			if assert.Nil(t, err) && assert.NotNil(t, fl1b) {
-// 				assert.True(t, layerEqual(l1, fl1b), "layer contents are not equal, expected %v, have %s", l1, fl1b)
-// 			}
-// 		}
-//
-// 		// Update the layer content with new data and a higher engine version
-// 		l1c := &Layer{ID: "l1", OS: "os2", InstalledPackagesNodes: []string{"p1", "p5"}, RemovedPackagesNodes: []string{"p6", "p7"}, EngineVersion: 2}
-// 		if assert.Nil(t, InsertLayer(l1c)) {
-// 			fl1c, err := FindOneLayerByID(l1c.ID, FieldLayerAll)
-// 			if assert.Nil(t, err) && assert.NotNil(t, fl1c) {
-// 				assert.True(t, layerEqual(l1c, fl1c), "layer contents are not equal, expected %v, have %s", l1c, fl1c)
-// 			}
-// 		}
-// 	}
-// }
+func TestInsertLayer(t *testing.T) {
+	datastore, err := OpenForTest("InsertLayer", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer datastore.Close()
+
+	// Insert invalid layer.
+	testInsertLayerInvalid(t, datastore)
+
+	// Insert a layer tree.
+	testInsertLayerTree(t, datastore)
+
+	// Update layer.
+	// TODO(Quentin-M)
+
+	// Delete layer.
+	// TODO(Quentin-M)
+}
+
+func testInsertLayerInvalid(t *testing.T, datastore database.Datastore) {
+	invalidLayers := []database.Layer{
+		database.Layer{},
+		database.Layer{Name: "layer0", Parent: &database.Layer{}},
+		database.Layer{Name: "layer0", Parent: &database.Layer{Name: "UnknownLayer"}},
+	}
+
+	for _, invalidLayer := range invalidLayers {
+		err := datastore.InsertLayer(invalidLayer)
+		assert.Error(t, err)
+	}
+}
+
+func testInsertLayerTree(t *testing.T, datastore database.Datastore) {
+	f1 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace2"},
+			Name:      "TestInsertLayerFeature1",
+		},
+		Version: types.NewVersionUnsafe("1.0"),
+	}
+	f2 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace2"},
+			Name:      "TestInsertLayerFeature2",
+		},
+		Version: types.NewVersionUnsafe("0.34"),
+	}
+	f3 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace2"},
+			Name:      "TestInsertLayerFeature3",
+		},
+		Version: types.NewVersionUnsafe("0.56"),
+	}
+	f4 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace3"},
+			Name:      "TestInsertLayerFeature2",
+		},
+		Version: types.NewVersionUnsafe("0.34"),
+	}
+	f5 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace3"},
+			Name:      "TestInsertLayerFeature2",
+		},
+		Version: types.NewVersionUnsafe("0.57"),
+	}
+	f6 := database.FeatureVersion{
+		Feature: database.Feature{
+			Namespace: database.Namespace{Name: "TestInsertLayerNamespace3"},
+			Name:      "TestInsertLayerFeature4",
+		},
+		Version: types.NewVersionUnsafe("0.666"),
+	}
+
+	layers := []database.Layer{
+		database.Layer{
+			Name: "TestInsertLayer1",
+		},
+		database.Layer{
+			Name:      "TestInsertLayer2",
+			Parent:    &database.Layer{Name: "TestInsertLayer1"},
+			Namespace: &database.Namespace{Name: "TestInsertLayerNamespace1"},
+		},
+		// This layer changes the namespace and adds Features.
+		database.Layer{
+			Name:      "TestInsertLayer3",
+			Parent:    &database.Layer{Name: "TestInsertLayer2"},
+			Namespace: &database.Namespace{Name: "TestInsertLayerNamespace2"},
+			Features:  []database.FeatureVersion{f1, f2, f3},
+		},
+		// This layer covers the case where the last layer doesn't provide any Feature.
+		database.Layer{
+			Name:   "TestInsertLayer4a",
+			Parent: &database.Layer{Name: "TestInsertLayer3"},
+		},
+		// This layer covers the case where the last layer provides Features.
+		// It also modifies the Namespace ("upgrade") but keeps some Features not upgraded, their
+		// Namespaces should then remain unchanged.
+		database.Layer{
+			Name:      "TestInsertLayer4b",
+			Parent:    &database.Layer{Name: "TestInsertLayer3"},
+			Namespace: &database.Namespace{Name: "TestInsertLayerNamespace3"},
+			Features: []database.FeatureVersion{
+				// Deletes TestInsertLayerFeature1.
+				// Keep TestInsertLayerFeature2 (old Namespace should be kept):
+				f4,
+				// Upgrades TestInsertLayerFeature3 (with new Namespace):
+				f5,
+				// Adds TestInsertLayerFeature4:
+				f6,
+			},
+		},
+	}
+
+	var err error
+	retrievedLayers := make(map[string]database.Layer)
+	for _, layer := range layers {
+		if layer.Parent != nil {
+			// Retrieve from database its parent and assign.
+			parent := retrievedLayers[layer.Parent.Name]
+			layer.Parent = &parent
+		}
+
+		err = datastore.InsertLayer(layer)
+		assert.Nil(t, err)
+
+		retrievedLayers[layer.Name], err = datastore.FindLayer(layer.Name, true, false)
+		assert.Nil(t, err)
+	}
+
+	l4a := retrievedLayers["TestInsertLayer4a"]
+	assert.Equal(t, "TestInsertLayerNamespace2", l4a.Namespace.Name)
+	assert.Len(t, l4a.Features, 3)
+	for _, featureVersion := range l4a.Features {
+		if cmpFV(featureVersion, f1) && cmpFV(featureVersion, f2) && cmpFV(featureVersion, f3) {
+			assert.Error(t, fmt.Errorf("TestInsertLayer4a contains an unexpected package: %#v. Should contain %#v and %#v and %#v.", featureVersion, f1, f2, f3))
+		}
+	}
+
+	l4b := retrievedLayers["TestInsertLayer4b"]
+	assert.Equal(t, "TestInsertLayerNamespace3", l4a.Namespace.Name)
+	assert.Len(t, l4a.Features, 3)
+	for _, featureVersion := range l4a.Features {
+		if cmpFV(featureVersion, f2) && cmpFV(featureVersion, f5) && cmpFV(featureVersion, f6) {
+			assert.Error(t, fmt.Errorf("TestInsertLayer4a contains an unexpected package: %#v. Should contain %#v and %#v and %#v.", featureVersion, f2, f4, f6))
+		}
+	}
+}
+
+func cmpFV(a, b database.FeatureVersion) bool {
+	return a.Feature.Name == b.Feature.Name &&
+		a.Feature.Namespace.Name == b.Feature.Namespace.Name &&
+		a.Version.String() == b.Version.String()
+}

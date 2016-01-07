@@ -38,7 +38,7 @@ const (
 	lockDuration        = refreshLockDuration + time.Minute*2
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "updater")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair", "updater")
 
 // Run updates the vulnerability database at regular intervals.
 func Run(config *config.UpdaterConfig, st *utils.Stopper) {

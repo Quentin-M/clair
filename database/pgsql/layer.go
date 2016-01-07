@@ -166,16 +166,19 @@ func (pgSQL *pgSQL) loadAffectedBy(featureVersions []database.FeatureVersion) er
 // However, please note that the Parent field, if provided, is expected to have been retrieved
 // using FindLayer with its Features.
 //
-// The Name MUST be unique for two different layers.
+// The Name must be unique for two different layers.
 //
-// TODO
-// If the Layer already exists, nothing is done, except if the provided engine
-// version is higher than the existing one, in which case, the OS,
-// InstalledPackagesNodes and RemovedPackagesNodes fields will be replaced.
+// If the Layer already exists and the EngineVersion value of the inserted layer is higher than the
+// stored value, the EngineVersion, the Namespace and the Feature list will be updated.
 //
-// The layer should only contains the newly installed/removed packages
-// There is no safeguard that prevents from marking a package as newly installed
-// while it has already been installed in one of its parent.
+// Internally, only Feature additions/removals are stored for each layer. If a layer has a parent,
+// the Feature list will be compared to the parent's Feature list and the difference will be stored.
+// Note that when the Namespace of a layer differs from its parent, it is expected that several
+// Feature that were already included a parent will have their Namespace updated as well
+// (happens when Feature detectors relies on the detected layer Namespace). However, if the listed
+// Feature has the same Name/Version as its parent, InsertLayer considers that the Feature hasn't
+// been modified.
+// TODO(Quentin-M): This behavior should be implemented at the Feature detectors level.
 func (pgSQL *pgSQL) InsertLayer(layer database.Layer) error {
 	// Verify parameters
 	if layer.Name == "" {
@@ -187,8 +190,9 @@ func (pgSQL *pgSQL) InsertLayer(layer database.Layer) error {
 	existingLayer, err := pgSQL.FindLayer(layer.Name, true, false)
 	if err != nil && err != cerrors.ErrNotFound {
 		return err
+	} else if err == nil {
+		layer.ID = existingLayer.ID
 	}
-	isExisting := err == nil
 
 	// Begin transaction.
 	tx, err := pgSQL.Begin()
@@ -208,7 +212,7 @@ func (pgSQL *pgSQL) InsertLayer(layer database.Layer) error {
 		namespaceID = zero.IntFrom(int64(n))
 	}
 
-	if isExisting {
+	if layer.ID == 0 {
 		// Insert a new layer.
 		var parentID zero.Int
 		if layer.Parent != nil {
@@ -218,6 +222,11 @@ func (pgSQL *pgSQL) InsertLayer(layer database.Layer) error {
 			}
 
 			parentID = zero.IntFrom(int64(layer.Parent.ID))
+
+			// Import the Namespace from the parent is this layer doesn't specify one.
+			if zero.IsNull(namespaceID) {
+				namespaceID = zero.IntFrom(int64(layer.Parent.Namespace.ID))
+			}
 		}
 
 		err = tx.QueryRow(getQuery("i_layer"), layer.Name, layer.EngineVersion, parentID, namespaceID).

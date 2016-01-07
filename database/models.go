@@ -27,7 +27,7 @@ type Feature struct {
 
 	Name      string
 	Namespace Namespace
-	FixedBy   map[types.Version]Vulnerability // <<-- WRONG.
+	// FixedBy   map[types.Version]Vulnerability // <<-- WRONG.
 }
 
 type FeatureVersion struct {
@@ -46,8 +46,8 @@ type Vulnerability struct {
 	Description string
 	Link        string
 	Severity    types.Priority
-	FixedIn     map[types.Version]Feature // <<-- WRONG.
-	Affects     []FeatureVersion
+	// FixedIn     map[types.Version]Feature // <<-- WRONG.
+	Affects []FeatureVersion
 
 	// For output purposes. Only make sense when the vulnerability
 	// is already about a specific Feature/FeatureVersion.

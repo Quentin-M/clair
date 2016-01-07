@@ -29,7 +29,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 )
 
-var log = capnslog.NewPackageLogger("github.com/coreos/clair-sql", "main")
+var log = capnslog.NewPackageLogger("github.com/coreos/clair", "main")
 
 // Boot starts Clair. By exporting this function, anyone can import their own
 // custom fetchers/updaters into their own package and then call clair.Boot.
