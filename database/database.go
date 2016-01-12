@@ -28,8 +28,8 @@ type Datastore interface {
 	DeleteLayer(name string) error
 
 	// Vulnerability
-	// InsertVulnerabilities([]*Vulnerability)
-	// DeleteVulnerability(id string)
+	InsertVulnerabilities([]Vulnerability) error
+	// DeleteVulnerability(id string) error
 
 	// Notifications
 	// InsertNotifications([]Notification) error
