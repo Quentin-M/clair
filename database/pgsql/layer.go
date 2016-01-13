@@ -77,7 +77,7 @@ func (pgSQL *pgSQL) getLayerFeatureVersions(layerID int, idOnly bool) ([]databas
 
 	// Query
 	rows, err := pgSQL.Query(query, layerID)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return featureVersions, handleError(query, err)
 	}
 	defer rows.Close()

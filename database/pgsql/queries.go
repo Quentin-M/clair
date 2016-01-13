@@ -10,6 +10,8 @@ var queries map[string]string
 func init() {
 	queries = make(map[string]string)
 
+	queries["set_tx_serializable"] = `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`
+
 	// keyvalue.go
 	queries["u_keyvalue"] = `UPDATE KeyValue SET value = $1 WHERE key = $2`
 	queries["i_keyvalue"] = `INSERT INTO KeyValue(key, value) VALUES($1, $2)`
@@ -140,9 +142,17 @@ func init() {
 	queries["r_lock_expired"] = `DELETE FROM LOCK WHERE until < CURRENT_TIMESTAMP`
 
 	// vulnerability.go
+	queries["f_vulnerability"] = `
+    SELECT v.id, n.id, v.description, v.link, v.severity, vfif.version, f.id, f.Name
+    FROM Vulnerability v
+      JOIN Namespace n ON v.namespace_id = n.id
+      LEFT JOIN Vulnerability_FixedIn_Feature vfif ON v.id = vfif.vulnerability_id
+      LEFT JOIN Feature f ON vfif.feature_id = f.id
+    WHERE n.Name = $1 AND v.Name = $2`
+
 	queries["i_vulnerability"] = `
     INSERT INTO Vulnerability(namespace_id, name, description, link, severity)
-    VALUES($1, $2, $3, $4, &5)
+    VALUES($1, $2, $3, $4, $5)
     RETURNING id`
 
 	queries["u_vulnerability"] = `

@@ -68,10 +68,10 @@ func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion)
 	// Set transaction as SERIALIZABLE.
 	// This is how we ensure that the data in Vulnerability_Affects_FeatureVersion is always
 	// consistent.
-	_, err = tx.Exec("SET TRANSACTION SERIALIZABLE")
+	_, err = tx.Exec(getQuery("set_tx_serializable"))
 	if err != nil {
 		tx.Rollback()
-		return 0, handleError("insertFeatureVersion.SetTxSerializable", err)
+		return 0, handleError("insertFeatureVersion.set_tx_serializable", err)
 	}
 
 	// Find or create FeatureVersion.
