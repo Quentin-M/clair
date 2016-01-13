@@ -166,11 +166,11 @@ func init() {
 	queries["u_vulnerability_fixedin_feature"] = `
     UPDATE Vulnerability_FixedIn_Feature
     SET version = $3
-    WHERE vulnerability_id = $1, feature_id = $2
+    WHERE vulnerability_id = $1 AND feature_id = $2
     RETURNING id`
 
 	queries["r_vulnerability_affects_featureversion"] = `
-    DELETE FROM Vulnerability_FixedIn_Feature
+    DELETE FROM Vulnerability_Affects_FeatureVersion
     WHERE fixedin_id = $1`
 
 	queries["f_featureversion_by_feature"] = `
