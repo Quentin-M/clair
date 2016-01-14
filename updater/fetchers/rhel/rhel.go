@@ -27,6 +27,7 @@ import (
 	"github.com/coreos/clair/updater"
 	cerrors "github.com/coreos/clair/utils/errors"
 	"github.com/coreos/clair/utils/types"
+	"github.com/coreos/pkg/capnslog"
 )
 
 const (
@@ -48,6 +49,8 @@ var (
 	}
 
 	rhsaRegexp = regexp.MustCompile(`com.redhat.rhsa-(\d+).xml`)
+
+	log = capnslog.NewPackageLogger("github.com/coreos/clair", "updater/fetchers/rhel")
 )
 
 type oval struct {
@@ -85,11 +88,11 @@ func init() {
 }
 
 // FetchUpdate gets vulnerability updates from the Red Hat OVAL definitions.
-func (f *RHELFetcher) FetchUpdate() (resp updater.FetcherResponse, err error) {
+func (f *RHELFetcher) FetchUpdate(datastore database.Datastore) (resp updater.FetcherResponse, err error) {
 	log.Info("fetching Red Hat vulneratibilities")
 
 	// Get the first RHSA we have to manage.
-	flagValue, err := database.GetFlagValue(rhelUpdaterFlag)
+	flagValue, err := datastore.GetKeyValue(rhelUpdaterFlag)
 	if err != nil {
 		return resp, err
 	}
@@ -332,7 +335,7 @@ func link(def definition) (link string) {
 	return
 }
 
-func priority(def definition) types.Priority {
+func priority(def definition) types.Severity {
 	// Parse the priority.
 	priority := strings.TrimSpace(def.Title[strings.LastIndex(def.Title, "(")+1 : len(def.Title)-1])
 
