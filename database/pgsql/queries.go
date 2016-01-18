@@ -10,8 +10,7 @@ var queries map[string]string
 func init() {
 	queries = make(map[string]string)
 
-	// queries["set_tx_serializable"] = `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`
-	queries["set_tx_serializable"] = `LOCK Vulnerability_Affects_FeatureVersion IN SHARE ROW EXCLUSIVE MODE`
+	queries["l_vulnerability_affects_featureversion"] = `LOCK Vulnerability_Affects_FeatureVersion IN SHARE ROW EXCLUSIVE MODE`
 
 	// keyvalue.go
 	queries["u_keyvalue"] = `UPDATE KeyValue SET value = $1 WHERE key = $2`
