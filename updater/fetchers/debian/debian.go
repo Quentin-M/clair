@@ -25,7 +25,6 @@ import (
 
 	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/updater"
-	"github.com/coreos/clair/updater/fetchers"
 	cerrors "github.com/coreos/clair/utils/errors"
 	"github.com/coreos/clair/utils/types"
 	"github.com/coreos/pkg/capnslog"
@@ -107,7 +106,7 @@ func buildResponse(jsonReader io.Reader, latestKnownHash string) (resp updater.F
 	err = json.NewDecoder(teedJSONReader).Decode(&data)
 	if err != nil {
 		log.Errorf("could not unmarshal Debian's JSON: %s", err)
-		return resp, fetchers.ErrCouldNotParse
+		return resp, cerrors.ErrCouldNotParse
 	}
 
 	// Calculate the hash and skip updating if the hash has been seen before.
