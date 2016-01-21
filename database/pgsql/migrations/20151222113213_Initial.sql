@@ -150,10 +150,10 @@ CREATE TABLE IF NOT EXISTS Notification (
   name VARCHAR(64) NOT NULL UNIQUE,
   kind VARCHAR(64) NOT NULL,
   notified_at TIMESTAMP WITH TIME ZONE NULL,
-  deleted_at TIMESTAMP WITH TIME ZONE NULL
+  deleted_at TIMESTAMP WITH TIME ZONE NULL,
   data TEXT);
 
-CREATE INDEX ON Notification (notifiedAt, deletedAt);
+CREATE INDEX ON Notification (notified_at, deleted_at);
 
 -- +goose Down
 
