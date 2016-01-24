@@ -100,7 +100,9 @@ func (pgSQL *pgSQL) insertFeatureVersion(featureVersion database.FeatureVersion)
 
 	// Lock Vulnerability_Affects_FeatureVersion exclusively.
 	// We want to prevent InsertVulnerability to modify it.
-	t = time.Now()
+	promConcurrentLockVAFV.Inc()
+  defer promConcurrentLockVAFV.Dec()
+  t = time.Now()
 	_, err = tx.Exec(getQuery("l_vulnerability_affects_featureversion"))
 	observeQueryTime("insertFeatureVersion", "lock", t)
 

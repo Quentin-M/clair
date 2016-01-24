@@ -58,6 +58,11 @@ var (
 		Name: "clair_pgsql_query_duration_milliseconds",
 		Help: "Time it takes to execute the database query.",
 	}, []string{"query", "subquery"})
+
+	promConcurrentLockVAFV = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "clair_pgsql_concurrent_lock_vafv_total",
+		Help: "Number of transactions trying to hold the exclusive Vulnerability_Affects_FeatureVersion lock.",
+	})
 )
 
 func init() {
@@ -65,6 +70,7 @@ func init() {
 	prometheus.MustRegister(promCacheHitsTotal)
 	prometheus.MustRegister(promCacheQueriesTotal)
 	prometheus.MustRegister(promQueryDurationMilliseconds)
+	prometheus.MustRegister(promConcurrentLockVAFV)
 }
 
 type pgSQL struct {
@@ -251,5 +257,5 @@ func isErrUniqueViolation(err error) bool {
 }
 
 func observeQueryTime(query, subquery string, start time.Time) {
-	utils.PrometheusObserveTimeMilliseconds( promQueryDurationMilliseconds.WithLabelValues(query, subquery), start)
+	utils.PrometheusObserveTimeMilliseconds(promQueryDurationMilliseconds.WithLabelValues(query, subquery), start)
 }
