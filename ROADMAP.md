@@ -1,0 +1,10 @@
+- Notifications: // TODO(Quentin-M): Fill LayersIntroducingVulnerability.
+- CVSS
+- Benchmark
+- Update doc
+- API
+  - Measure Vuln Latency / Failure rate (reduce to TP95 < 300ms and failure rate to < 0.5%)
+  - Notification failure rate (reduce to <0.1%)
+  - Insert Rate / Find Vuln per second
+  - 5XX per second
+- Update contrib
