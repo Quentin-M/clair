@@ -1,4 +1,3 @@
-- Notifications: // TODO(Quentin-M): Fill LayersIntroducingVulnerability.
 - CVSS
 - Benchmark
 - Update doc
