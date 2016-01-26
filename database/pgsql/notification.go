@@ -56,7 +56,6 @@ func (pgSQL *pgSQL) GetAvailableNotification(renotifyInterval time.Duration) (da
 	return notification, handleError("s_notification_available", err)
 }
 
-// limit 0 will not try to fetch introducing.
 func (pgSQL *pgSQL) GetNotification(name string, limit int, page database.VulnerabilityNotificationPageNumber) (database.VulnerabilityNotification, database.VulnerabilityNotificationPageNumber, error) {
 	defer observeQueryTime("GetNotification", "all", time.Now())
 
@@ -121,6 +120,8 @@ func scanNotification(row *sql.Row, hasVulns bool) (notification database.Vulner
 }
 
 // Fills Vulnerability.LayersIntroducingVulnerability.
+// limit -1: won't do anything
+// limit 0: will just get the startID of the second page
 func (pgSQL *pgSQL) loadLayerIntroducingVulnerability(vulnerability *database.Vulnerability, limit, startID int) (int, error) {
 	tf := time.Now()
 
@@ -129,7 +130,7 @@ func (pgSQL *pgSQL) loadLayerIntroducingVulnerability(vulnerability *database.Vu
 	}
 
 	// A startID equals to -1 means that we reached the end already.
-	if startID == -1 || limit == 0 {
+	if startID == -1 || limit == -1 {
 		return -1, nil
 	}
 
