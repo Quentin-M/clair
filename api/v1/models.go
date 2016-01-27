@@ -14,6 +14,11 @@
 
 package v1
 
+type ErrorResponse struct {
+	Error string
+	Type  string
+}
+
 type Layer struct {
 	Name             string
 	Path             string
@@ -44,7 +49,8 @@ type Notification struct {
 	Notified string
 	Deleted  string
 	Limit    int
-	Offset   int
+	Page     string
+	NextPage string
 	Old      VulnerabilityWithLayers
 	New      VulnerabilityWithLayers
 	Changed  []string
