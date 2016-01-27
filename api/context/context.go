@@ -15,23 +15,31 @@
 package context
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/coreos/clair/database"
 )
 
 var log = capnslog.NewPackageLogger("github.com/coreos/clair", "api")
 
 type Handler func(http.ResponseWriter, *http.Request, httprouter.Params, *RouteContext) int
 
-func HTTPHandler(handler Handler, ctx *RouteContext) http.Handler {
+func HTTPHandler(handler Handler, ctx *RouteContext) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		status := handler(w, r, p, ctx)
-		log.Infof("%d %s %s", status, r.Method, r.RequestURI)
+		statusStr := fmt.Sprintf("%d", status)
+		if status == 0 {
+			statusStr = "???"
+		}
+
+		log.Infof("%s %s %s %s", statusStr, r.Method, r.RequestURI, r.RemoteAddr)
 	}
 }
 
 type RouteContext struct {
-	store DataStore
+	Store database.Datastore
 }

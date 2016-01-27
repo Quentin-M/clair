@@ -17,9 +17,8 @@ package v1
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/coreos/clair/api2/context"
+	"github.com/coreos/clair/api/context"
 )
 
 // NewRouter creates an HTTP router for version 1 of the Clair API.
@@ -51,7 +50,7 @@ func NewRouter(ctx *context.RouteContext) *httprouter.Router {
 	router.DELETE("/notifications/:notificationName", context.HTTPHandler(deleteNotification, ctx))
 
 	// Metrics
-	router.GET("/metrics", prometheus.Handler())
+	router.GET("/metrics", context.HTTPHandler(getMetrics, ctx))
 
 	return router
 }

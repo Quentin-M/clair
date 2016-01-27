@@ -28,7 +28,7 @@ type Vulnerability struct {
 	Description string
 	Severity    string
 	FixedBy     string
-	FixedIn     []Features
+	FixedIn     []Feature
 }
 
 type Feature struct {

@@ -26,13 +26,14 @@ import (
 	"github.com/prometheus/common/log"
 	"github.com/tylerb/graceful"
 
-	"github.com/coreos/clair/api2/context"
+	"github.com/coreos/clair/api/context"
+	"github.com/coreos/clair/config"
 	"github.com/coreos/clair/utils"
 )
 
 const timeoutResponse = `{"Error":{"Message":"Clair failed to respond within the configured timeout window.","Type":"Timeout"}}`
 
-func RunServer(config *APIConfig, ctx *context.RouteContext, st *utils.Stopper) {
+func Run(config *config.APIConfig, ctx *context.RouteContext, st *utils.Stopper) {
 	defer st.End()
 
 	// Do not run the API service if there is no config.
@@ -56,7 +57,7 @@ func RunServer(config *APIConfig, ctx *context.RouteContext, st *utils.Stopper) 
 		Server: &http.Server{
 			Addr:      ":" + strconv.Itoa(config.Port),
 			TLSConfig: tlsConfig,
-			Handler:   net.TimeoutHandler(newAPIHandler(ctx), config.Timeout, timeoutResponse),
+			Handler:   http.TimeoutHandler(newAPIHandler(ctx), config.Timeout, timeoutResponse),
 		},
 	}
 
@@ -65,7 +66,7 @@ func RunServer(config *APIConfig, ctx *context.RouteContext, st *utils.Stopper) 
 	log.Info("main API stopped")
 }
 
-func RunHealthServer(config *APIConfig, ctx *context.RouteContext, st *utils.Stopper) {
+func RunHealth(config *config.APIConfig, ctx *context.RouteContext, st *utils.Stopper) {
 	// Do not run the API service if there is no config.
 	if config == nil {
 		log.Infof("health API service is disabled.")
@@ -78,7 +79,7 @@ func RunHealthServer(config *APIConfig, ctx *context.RouteContext, st *utils.Sto
 		NoSignalHandling: true,             // We want to use our own Stopper
 		Server: &http.Server{
 			Addr:    ":" + strconv.Itoa(config.HealthPort),
-			Handler: net.TimeoutHandler(newHealthRouter(ctx), config.Timeout, timeoutResponse),
+			Handler: http.TimeoutHandler(newHealthHandler(ctx), config.Timeout, timeoutResponse),
 		},
 	}
 

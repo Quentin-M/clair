@@ -18,8 +18,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/coreos/clair/api2/context"
 	"github.com/julienschmidt/httprouter"
+
+	"github.com/coreos/clair/api/context"
+	"github.com/coreos/clair/api/v1"
 )
 
 // router is an HTTP router that forwards requests to the appropriate sub-router
@@ -30,19 +32,19 @@ type router map[string]*httprouter.Router
 const apiVersionLength = len("v99")
 
 func newAPIHandler(ctx *context.RouteContext) http.Handler {
-	router := make(Router)
-	router["v1"] = v1.newRouter(ctx)
+	router := make(router)
+	router["v1"] = v1.NewRouter(ctx)
 	return router
 }
 
-func (r router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (rtr router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	urlStr := r.URL.String()
 	var version string
 	if len(urlStr) >= apiVersionLength {
 		version = urlStr[:apiVersionLength]
 	}
 
-	if router, _ := vs[version]; router != nil {
+	if router, _ := rtr[version]; router != nil {
 		// Remove the version number from the request path to let the router do its
 		// job but do not update the RequestURI
 		r.URL.Path = strings.Replace(r.URL.Path, version, "", 1)
@@ -55,6 +57,10 @@ func (r router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func newHealthHandler(ctx *context.RouteContext) http.Handler {
 	router := httprouter.New()
-	router.GET("/health", context.Handler(getHealth, ctx))
+	router.GET("/health", context.HTTPHandler(getHealth, ctx))
 	return router
+}
+
+func getHealth(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *context.RouteContext) int {
+	return 0
 }
