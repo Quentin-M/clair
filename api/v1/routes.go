@@ -23,30 +23,46 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/coreos/clair/api/context"
+	cerrors "github.com/coreos/clair/utils/errors"
+	"github.com/coreos/clair/worker"
 )
 
 // maxBodySize restricts client requests to 1MiB.
 const maxBodySize int64 = 1048576
 
-func parseRequest(r *http.Request, v interface{}) error {
+func decodeJSON(r *http.Request, v interface{}) error {
 	defer r.Body.Close()
-	err := json.NewDecoder(io.LimitReader(r.Body, maxBodySize)).Decode(v)
-	if err != nil {
-		return err
-	}
+	return json.NewDecoder(io.LimitReader(r.Body, maxBodySize)).Decode(v)
+}
 
-	return nil
+func writeError(w io.Writer, err error, errType string) {
+	err = json.NewEncoder(w).Encode(ErrorResponse{Error{err.Error(), errType}})
+	if err != nil {
+		panic("v1: failed to marshal error response: " + err.Error())
+	}
 }
 
 func postLayer(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *context.RouteContext) int {
-	request := struct{ Vulnerability Vulnerability }{}
-	err := parseRequest(r, &request)
+	request := LayerRequest{}
+	err := decodeJSON(r, &request)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, err, "BadRequest")
+		return http.StatusBadRequest
 	}
-	// TODO(jzelinskie) finish this.
 
-	return 0
+	err = worker.Process(ctx.Store, request.Layer.Name, request.Layer.ParentName, request.Layer.Path, request.Layer.Format)
+	if err != nil {
+		if _, ok := err.(*cerrors.ErrBadRequest); ok {
+			w.WriteHeader(http.StatusBadRequest)
+			writeError(w, err, "BadRequest")
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		writeError(w, err, "InternalServerError")
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	return http.StatusCreated
 }
 
 func getLayer(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *context.RouteContext) int {
