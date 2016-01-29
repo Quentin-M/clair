@@ -88,7 +88,7 @@ func init() {
 }
 
 // FetchUpdate gets vulnerability updates from the Red Hat OVAL definitions.
-func (f *RHELFetcher) FetchUpdate(datastore database.Datastore) (resp updater.FetcherResponse, err error) {
+func (fetcher *RHELFetcher) FetchUpdate(datastore database.Datastore) (resp updater.FetcherResponse, err error) {
 	log.Info("fetching Red Hat vulneratibilities")
 
 	// Get the first RHSA we have to manage.
@@ -158,7 +158,7 @@ func parseRHSA(ovalReader io.Reader) (vulnerabilities []database.Vulnerability, 
 	var ov oval
 	err = xml.NewDecoder(ovalReader).Decode(&ov)
 	if err != nil {
-		log.Errorf("could not decode RHEL's XML: %s.", err)
+		log.Errorf("could not decode RHEL's XML: %s", err)
 		err = cerrors.ErrCouldNotParse
 		return
 	}
@@ -354,3 +354,6 @@ func priority(def definition) types.Priority {
 		return types.Unknown
 	}
 }
+
+// Clean deletes any allocated resources.
+func (f *RHELFetcher) Clean() {}
