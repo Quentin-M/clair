@@ -131,6 +131,7 @@ func getLayer(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *
 		}
 	}
 
+	writeResponse(w, layer)
 	return writeHeader(w, http.StatusOK)
 }
 
