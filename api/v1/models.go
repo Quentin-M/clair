@@ -64,6 +64,7 @@ func LayerFromDatabaseModel(dbLayer database.Layer, withFeatures, withVulnerabil
 					Namespace:   dbVuln.Namespace.Name,
 					Description: dbVuln.Description,
 					Severity:    string(dbVuln.Severity),
+					Metadata:    dbVuln.Metadata,
 				}
 
 				if dbVuln.FixedBy != types.MaxVersion {
@@ -79,13 +80,14 @@ func LayerFromDatabaseModel(dbLayer database.Layer, withFeatures, withVulnerabil
 }
 
 type Vulnerability struct {
-	Name        string    `json:"Name,omitempty"`
-	Namespace   string    `json:"Namespace,omitempty"`
-	Description string    `json:"Description,omitempty"`
-	Link        string    `json:"Link,omitempty"`
-	Severity    string    `json:"Severity,omitempty"`
-	FixedBy     string    `json:"FixedBy,omitempty"`
-	FixedIn     []Feature `json:"FixedIn,omitempty"`
+	Name        string                 `json:"Name,omitempty"`
+	Namespace   string                 `json:"Namespace,omitempty"`
+	Description string                 `json:"Description,omitempty"`
+	Link        string                 `json:"Link,omitempty"`
+	Severity    string                 `json:"Severity,omitempty"`
+	Metadata    map[string]interface{} `json:"Metadata,omitempty"`
+	FixedBy     string                 `json:"FixedBy,omitempty"`
+	FixedIn     []Feature              `json:"FixedIn,omitempty"`
 }
 
 func (v Vulnerability) DatabaseModel() (database.Vulnerability, error) {
@@ -116,6 +118,7 @@ func (v Vulnerability) DatabaseModel() (database.Vulnerability, error) {
 		Description: v.Description,
 		Link:        v.Link,
 		Severity:    severity,
+		Metadata:    v.Metadata,
 		FixedIn:     dbFeatures,
 	}, nil
 }
@@ -127,6 +130,7 @@ func VulnerabilityFromDatabaseModel(dbVuln database.Vulnerability, withFixedIn b
 		Description: dbVuln.Description,
 		Link:        dbVuln.Link,
 		Severity:    string(dbVuln.Severity),
+		Metadata:    dbVuln.Metadata,
 	}
 
 	if withFixedIn {
