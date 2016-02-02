@@ -50,6 +50,10 @@ type Datastore interface {
 	FindVulnerability(namespaceName, name string) (Vulnerability, error)
 	DeleteVulnerability(namespaceName, name string) error
 
+	// Fixes
+	InsertVulnerabilityFix(vulnerabilityNamespace, vulnerabilityName string, fixes []FeatureVersion) error
+	DeleteVulnerabilityFix(vulnerabilityNamespace, vulnerabilityName string) error
+
 	// Notifications
 	GetAvailableNotification(renotifyInterval time.Duration) (VulnerabilityNotification, error) // Does not fill old/new Vulnerabilities.
 	GetNotification(name string, limit int, page VulnerabilityNotificationPageNumber) (VulnerabilityNotification, VulnerabilityNotificationPageNumber, error)
