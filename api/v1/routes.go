@@ -253,7 +253,7 @@ func putFix(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *co
 		return writeHeader(w, http.StatusBadRequest)
 	}
 
-	err = ctx.Store.InsertVulnerabilityFix(p.ByName("vulnerabilityNamespace"), p.ByName("vulnerabilityName"), []database.FeatureVersion{dbFix})
+	err = ctx.Store.InsertVulnerabilityFixes(p.ByName("vulnerabilityNamespace"), p.ByName("vulnerabilityName"), []database.FeatureVersion{dbFix})
 	if err == cerrors.ErrNotFound {
 		writeResponse(w, FeatureEnvelope{Error: &Error{err.Error()}})
 		return writeHeader(w, http.StatusNotFound)
@@ -266,7 +266,7 @@ func putFix(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *co
 }
 
 func deleteFix(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *context.RouteContext) int {
-	err := DeleteVulnerabilityFix(p.ByName("vulnerabilityNamespace"), p.ByName("vulnerabilityName"), p.ByName("fixName"))
+	err := ctx.Store.DeleteVulnerabilityFix(p.ByName("vulnerabilityNamespace"), p.ByName("vulnerabilityName"), p.ByName("fixName"))
 	if err == cerrors.ErrNotFound {
 		writeResponse(w, FeatureEnvelope{Error: &Error{err.Error()}})
 		return writeHeader(w, http.StatusNotFound)
