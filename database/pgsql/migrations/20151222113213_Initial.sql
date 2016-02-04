@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS Vulnerability (
   link VARCHAR(128) NULL,
   severity severity NOT NULL,
   metadata TEXT NULL,
-  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE NULL,
 
   UNIQUE (namespace_id, name));
 
