@@ -49,28 +49,24 @@ func (pgSQL *pgSQL) GetNotification(name string, limit int, page database.Vulner
 	}
 
 	// Load vulnerabilities' LayersIntroducingVulnerability.
-	if notification.OldVulnerability != nil {
-		page.OldVulnerability, err = pgSQL.loadLayerIntroducingVulnerability(
-			notification.OldVulnerability,
-			limit,
-			page.OldVulnerability,
-		)
+	page.OldVulnerability, err = pgSQL.loadLayerIntroducingVulnerability(
+		notification.OldVulnerability,
+		limit,
+		page.OldVulnerability,
+	)
 
-		if err != nil {
-			return notification, page, err
-		}
+	if err != nil {
+		return notification, page, err
 	}
 
-	if notification.NewVulnerability != nil {
-		page.NewVulnerability, err = pgSQL.loadLayerIntroducingVulnerability(
-			notification.NewVulnerability,
-			limit,
-			page.NewVulnerability,
-		)
+	page.NewVulnerability, err = pgSQL.loadLayerIntroducingVulnerability(
+		notification.NewVulnerability,
+		limit,
+		page.NewVulnerability,
+	)
 
-		if err != nil {
-			return notification, page, err
-		}
+	if err != nil {
+		return notification, page, err
 	}
 
 	return notification, page, nil
