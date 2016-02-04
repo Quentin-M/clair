@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/coreos/clair/database"
 	cerrors "github.com/coreos/clair/utils/errors"
 	"github.com/coreos/clair/utils/types"
@@ -118,6 +116,5 @@ func TestNotification(t *testing.T) {
 
 		n, err := datastore.GetAvailableNotification(time.Millisecond)
 		assert.Equal(t, cerrors.ErrNotFound, err)
-		fmt.Println(n)
 	}
 }
