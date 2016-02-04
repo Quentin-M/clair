@@ -37,6 +37,10 @@ var (
 	}, []string{"route", "code"})
 )
 
+func init() {
+	prometheus.MustRegister(promResponseDurationMilliseconds)
+}
+
 type Handler func(http.ResponseWriter, *http.Request, httprouter.Params, *RouteContext) (route string, status int)
 
 func HTTPHandler(handler Handler, ctx *RouteContext) httprouter.Handle {

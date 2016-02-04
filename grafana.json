@@ -720,7 +720,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(clair_api_query_duration_milliseconds_sum[$rate])) by (query, subquery) / sum(rate(clair_api_query_duration_milliseconds_count[$rate])) by (query)",
+              "expr": "sum(rate(clair_api_response_duration_milliseconds_sum[$rate])) by (query, subquery) / sum(rate(clair_api_response_duration_milliseconds_count[$rate])) by (query)",
               "intervalFactor": 2,
               "legendFormat": "{{query}}",
               "metric": "",
@@ -777,7 +777,7 @@
           },
           "targets": [
             {
-              "expr": "sum(rate(clair_api_query_duration_milliseconds_bucket{le=\"300\", query=\"GETLayers\"}[$rate])) / sum(rate(clair_api_query_duration_milliseconds_count{query=\"GETLayers\"}[$rate])) * 100",
+              "expr": "sum(rate(clair_api_response_duration_milliseconds_bucket{le=\"300\", query=\"GETLayers\"}[$rate])) / sum(rate(clair_api_response_duration_milliseconds_count{query=\"GETLayers\"}[$rate])) * 100",
               "intervalFactor": 2,
               "legendFormat": "",
               "refId": "A",
@@ -830,11 +830,11 @@
           },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum(rate(clair_api_query_duration_milliseconds_bucket{query=\"getLayer\"}[$rate])) by (le))",
+              "expr": "histogram_quantile(0.95, sum(rate(clair_api_response_duration_milliseconds_bucket{query=\"getLayer\"}[$rate])) by (le))",
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "",
-              "metric": "clair_api_query_duration_milliseconds_bucket",
+              "metric": "clair_api_response_duration_milliseconds_bucket",
               "refId": "A",
               "step": 21
             }
