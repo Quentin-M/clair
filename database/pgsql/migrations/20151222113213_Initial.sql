@@ -91,9 +91,7 @@ CREATE TABLE IF NOT EXISTS Vulnerability (
   severity severity NOT NULL,
   metadata TEXT NULL,
   created_at TIMESTAMP WITH TIME ZONE,
-  deleted_at TIMESTAMP WITH TIME ZONE NULL,
-
-  UNIQUE (namespace_id, name));
+  deleted_at TIMESTAMP WITH TIME ZONE NULL);
 
 
 -- -----------------------------------------------------

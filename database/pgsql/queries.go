@@ -145,31 +145,18 @@ func init() {
 	queries["r_lock_expired"] = `DELETE FROM LOCK WHERE until < CURRENT_TIMESTAMP`
 
 	// vulnerability.go
-	queries["f_vulnerability"] = `
-    SELECT v.id, v.name, n.id, n.name, v.description, v.link, v.severity, v.metadata, vfif.version,
-      f.id, f.Name
-    FROM Vulnerability v
-      JOIN Namespace n ON v.namespace_id = n.id
-      LEFT JOIN Vulnerability_FixedIn_Feature vfif ON v.id = vfif.vulnerability_id
-      LEFT JOIN Feature f ON vfif.feature_id = f.id
-    WHERE n.Name = $1 AND v.Name = $2 AND deleted_at IS NULL`
+	queries["f_vulnerability_base"] = `
+    SELECT v.id, v.name, n.id, n.name, v.description, v.link, v.severity, v.metadata
+    FROM Vulnerability v JOIN Namespace n ON v.namespace_id = n.id`
 
-	queries["f_vulnerability_for_update"] = `
-    SELECT FOR UPDATE v.id, v.name, n.id, n.name, v.description, v.link, v.severity, v.metadata,
-      vfif.version, f.id, f.Name
-    FROM Vulnerability v
-      JOIN Namespace n ON v.namespace_id = n.id
-      LEFT JOIN Vulnerability_FixedIn_Feature vfif ON v.id = vfif.vulnerability_id
-      LEFT JOIN Feature f ON vfif.feature_id = f.id
-    WHERE n.Name = $1 AND v.Name = $2 AND deleted_at IS NULL`
+	queries["f_vulnerability_for_update"] = ` FOR UPDATE OF v`
+	queries["f_vulnerability_+by_name_namespace"] = ` WHERE n.name = $1 AND v.name = $2 AND v.deleted_at IS NULL`
+	queries["f_vulnerability_+by_id"] = ` WHERE v.id = $1`
 
-	queries["f_vulnerability_by_id_with_deleted"] = `
-    SELECT v.id, v.name, n.id, n.name, v.description, v.link, v.severity, v.metadata, vfif.version, f.id, f.Name
-    FROM Vulnerability v
-      JOIN Namespace n ON v.namespace_id = n.id
-      LEFT JOIN Vulnerability_FixedIn_Feature vfif ON v.id = vfif.vulnerability_id
-      LEFT JOIN Feature f ON vfif.feature_id = f.id
-    WHERE v.id = $1`
+	queries["f_vulnerability_fixedin"] = `
+    SELECT vfif.version, f.id, f.Name
+    FROM Vulnerability_FixedIn_Feature vfif JOIN Feature f ON vfif.feature_id = f.id
+    WHERE vfif.vulnerability_id = $1`
 
 	queries["i_vulnerability"] = `
     INSERT INTO Vulnerability(namespace_id, name, description, link, severity, metadata, created_at)
@@ -217,7 +204,7 @@ func init() {
     LIMIT 1`
 
 	queries["s_notification"] = `
-    SELECT id, name, created_at, notified_at, deleted_at, old_vulnerability, new_vulnerability
+    SELECT id, name, created_at, notified_at, deleted_at, old_vulnerability_id, new_vulnerability_id
     FROM Vulnerability_Notification
     WHERE name = $1`
 
