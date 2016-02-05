@@ -61,7 +61,6 @@ func LayerFromDatabaseModel(dbLayer database.Layer, withFeatures, withVulnerabil
 			for _, dbVuln := range dbFeatureVersion.AffectedBy {
 				vuln := Vulnerability{
 					Name:        dbVuln.Name,
-					Namespace:   dbVuln.Namespace.Name,
 					Description: dbVuln.Description,
 					Severity:    string(dbVuln.Severity),
 					Metadata:    dbVuln.Metadata,
