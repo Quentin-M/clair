@@ -36,9 +36,9 @@ const (
 	firstRHEL5RHSA      = 20070044
 	firstConsideredRHEL = 5
 
-	ovalURI         = "https://www.redhat.com/security/data/oval/"
-	rhsaFilePrefix  = "com.redhat.rhsa-"
-	rhelUpdaterFlag = "rhelUpdater"
+	ovalURI        = "https://www.redhat.com/security/data/oval/"
+	rhsaFilePrefix = "com.redhat.rhsa-"
+	updaterFlag    = "rhelUpdater"
 )
 
 var (
@@ -96,7 +96,7 @@ func (fetcher *RHELFetcher) FetchUpdate(datastore database.Datastore) (resp upda
 	log.Info("fetching Red Hat vulneratibilities")
 
 	// Get the first RHSA we have to manage.
-	flagValue, err := datastore.GetKeyValue(rhelUpdaterFlag)
+	flagValue, err := datastore.GetKeyValue(updaterFlag)
 	if err != nil {
 		return resp, err
 	}
@@ -148,7 +148,7 @@ func (fetcher *RHELFetcher) FetchUpdate(datastore database.Datastore) (resp upda
 
 	// Set the flag if we found anything.
 	if len(rhsaList) > 0 {
-		resp.FlagName = rhelUpdaterFlag
+		resp.FlagName = updaterFlag
 		resp.FlagValue = strconv.Itoa(rhsaList[len(rhsaList)-1])
 	} else {
 		log.Debug("no Red Hat update.")
